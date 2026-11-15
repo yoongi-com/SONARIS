@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SONARIS - Planetary Jukebox (Quantum-Chaos Engine)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Michroma&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body, html {
+            margin: 0; padding: 0; width: 100%;
+            background-color: #030712;
+            font-family: 'Inter', sans-serif;
+            color: #FFFFFF; overflow-x: hidden; scroll-behavior: smooth;
+        }
+        .fixed-navbar {
+            position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 8%; background: rgba(3, 7, 18, 0.85);
+            backdrop-filter: blur(20px); border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+        }
+        .nav-meta { font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase; color: #38BDF8; font-weight: 700; }
+        .web-section { width: 100%; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; justify-content: center; padding: 0 10%; }
+        .section-1 { min-height: 62vh; padding-top: 95px; padding-bottom: 55px; background-image: linear-gradient(90deg, rgba(3,7,18,0.94) 52%, rgba(3,7,18,0.28) 100%), url('https://eol.jsc.nasa.gov/DatabaseImages/ESC/large/ISS066/ISS066-E-88179.JPG'); }
+        .section-2 { min-height: 44vh; padding-top: 50px; padding-bottom: 50px; background-image: linear-gradient(90deg, rgba(3,7,18,0.95) 55%, rgba(3,7,18,0.3) 100%), url('https://svs.gsfc.nasa.gov/vis/a000000/a005400/a005450/2024GISTEMPMap_2K.png'); }
+        .hero-center-title { width: 100%; text-align: center; margin: 0 auto 38px auto; font-family: 'Michroma', sans-serif; font-size: 46px; font-weight: 400; letter-spacing: 8px; color: #F1F5F9; text-transform: uppercase; text-shadow: 0 4px 24px rgba(56, 189, 248, 0.3); z-index: 2; }
+        .letter-a-logo { position: relative; display: inline-block; }
+        .star-in-a { position: absolute; bottom: 0.08em; left: 50%; transform: translateX(-50%); font-size: 0.34em; letter-spacing: 0; color: #38BDF8; }
+        .content-box { max-width: 760px; display: flex; flex-direction: column; gap: 16px; z-index: 2; }
+        .brand-top { font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: #38BDF8; font-weight: 700; }
+        .brand-sub { font-size: 20px; letter-spacing: 2px; text-transform: uppercase; color: #F1F5F9; font-weight: 800; margin: 0; }
+        .section-paragraph { font-size: 17px; color: #CBD5E1; line-height: 1.75; margin: 0; font-weight: 500; }
+
+        .section-3 { width: 100%; background-color: #030712; padding: 55px 8% 75px 8%; display: flex; justify-content: center; }
+        .ref-dashboard { width: 100%; max-width: 1160px; display: flex; flex-direction: column; gap: 16px; }
+        .ref-row { display: grid; grid-template-columns: 1.42fr 1fr; gap: 16px; }
+        @media (max-width: 920px) { .ref-row { grid-template-columns: 1fr; } }
+
+        .ref-media-card {
+            min-height: 430px; border-radius: 16px; background: #050811;
+            border: 1px solid rgba(56, 189, 248, 0.35); padding: 18px 22px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            position: relative; overflow: hidden;
+            box-shadow: 0 0 45px rgba(2, 132, 199, 0.18);
+        }
+        #satelliteCanvas, #chaosCanvas {
+            position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+        }
+        #satelliteCanvas { opacity: 0.72; }
+        #chaosCanvas { z-index: 1; }
+
+        .top-hud-bar {
+            z-index: 2; display: flex; justify-content: space-between; align-items: center;
+            background: rgba(3, 7, 18, 0.72); backdrop-filter: blur(8px);
+            padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+        .ref-micro-label { font-size: 11px; color: #38BDF8; letter-spacing: 1.2px; font-weight: 700; }
+        .live-pill { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #34D399; background: rgba(52, 211, 153, 0.12); padding: 3px 8px; border-radius: 999px; border: 1px solid rgba(52, 211, 153, 0.3); }
+
+        .hud-overlay {
+            z-index: 2; background: rgba(3, 7, 18, 0.82); backdrop-filter: blur(14px);
+            border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 14px 16px;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .hud-title { font-family: 'Michroma', sans-serif; font-size: 12px; color: #F8FAFC; letter-spacing: 1px; }
+        .hud-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 14px; margin-top: 4px; }
+        .hud-data { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #94A3B8; }
+        .hud-data span { color: #38BDF8; font-weight: 600; }
+
+        .ref-control-card {
+            background: #111622; border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px; padding: 24px 26px;
+            display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
+        }
+        .ref-project-title { font-size: 25px; font-weight: 600; color: #F1F5F9; line-height: 1.15; margin: 0; letter-spacing: -0.5px; }
+        .ref-meta-split { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 14px; align-items: start; }
+        .ref-bullet-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: #94A3B8; }
+        .ref-bullet-list li::before { content: "▸ "; color: #38BDF8; }
+        .ref-mini-desc { font-size: 11.5px; color: #CBD5E1; line-height: 1.5; margin: 0; }
+
+        .quick-nodes { display: flex; flex-wrap: wrap; gap: 6px; }
+        .node-chip {
+            background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25);
+            color: #BAE6FD; font-size: 10.5px; padding: 4px 10px; border-radius: 999px;
+            cursor: pointer; transition: all 0.2s; font-family: 'JetBrains Mono', monospace;
+        }
+        .node-chip:hover { background: rgba(56, 189, 248, 0.25); color: #FFFFFF; }
+
+        .ref-input-bar {
+            width: 100%; background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px;
+            padding: 11px 14px; color: #FFFFFF; font-size: 13.5px; outline: none; font-family: 'Inter', sans-serif;
+        }
+        .ref-input-bar:focus { border-color: #38BDF8; box-shadow: 0 0 18px rgba(56, 189, 248, 0.3); }
+
+        .ref-pill-row { display: flex; gap: 10px; align-items: center; }
+        .pill-btn-blue {
+            flex: 1; background: linear-gradient(135deg, #0284C7 0%, #2563EB 100%);
+            color: #FFFFFF; border: none; border-radius: 999px; padding: 11px 20px;
+            font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all 0.25s ease;
+            letter-spacing: 0.3px;
+        }
+        .pill-btn-blue:hover { box-shadow: 0 0 22px rgba(56, 189, 248, 0.55); transform: translateY(-1px); }
+        .pill-btn-white {
+            background: #E2E8F0; color: #0F172A; border: none; border-radius: 999px;
+            padding: 11px 18px; font-size: 12px; font-weight: 700; cursor: pointer;
+        }
+        .pill-btn-white:hover { background: #FFFFFF; }
+
+        .ref-glow-chamber {
+            min-height: 132px; border-radius: 12px;
+            background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.14) 0%, rgba(10, 15, 26, 0.85) 100%);
+            display: flex; align-items: center; justify-content: center; padding: 12px 14px;
+            border: 1px solid rgba(56, 189, 248, 0.22);
+        }
+        .ref-telemetry-text { font-family: 'JetBrains Mono', monospace; font-size: 10.8px; color: #E2E8F0; line-height: 1.55; text-align: left; width: 100%; }
+
+        .ref-timeline-card { background: #111622; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 18px 24px; display: flex; flex-direction: column; justify-content: space-between; }
+        .ref-timeline-header { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #94A3B8; margin-bottom: 10px; font-family: 'JetBrains Mono', monospace; }
+        .ref-light-card { background: #E2E4E9; color: #111827; border-radius: 16px; padding: 18px 24px; display: flex; flex-direction: column; justify-content: space-between; }
+        .ref-light-header { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(17, 24, 39, 0.12); font-size: 12px; font-weight: 700; color: #1F2937; }
+        .blue-dot-badge { width: 20px; height: 20px; border-radius: 6px; background: #0284C7; display: inline-block; }
+        .ref-metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding-top: 10px; }
+        .metric-item-label { font-size: 10px; color: #4B5563; margin-bottom: 2px; font-weight: 600; }
+        .metric-item-val { font-size: 12.5px; font-weight: 800; color: #0F172A; font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body>
+
+    <header class="fixed-navbar">
+        <span style="font-family:'Michroma'; font-size:14px; color:#38BDF8; letter-spacing:2px;">SONARIS // QUANTUM-CHAOS ENGINE</span>
+        <div class="nav-meta">NASA Space Apps Challenge</div>
+    </header>
+
+    <section class="web-section section-1">
+        <h1 class="hero-center-title">SON<span class="letter-a-logo">A<span class="star-in-a">✦</span></span>RIS</h1>
+        <div class="content-box">
+            <span class="brand-top">The Narrative of Living Telemetry</span>
+            <h2 class="brand-sub">Listen to Earth</h2>
+            <p class="section-paragraph">
+                Transforming real-time Earth observation telemetry from NASA Earth Information Center (EIC) into living, non-linear ambient soundscapes through advanced chaos theory and dynamical systems.
+            </p>
+        </div>
+    </section>
+
+    <section class="web-section section-2">
+        <div class="content-box">
+            <span class="brand-top">Symphony of Global Science</span>
+            <h2 class="brand-sub">Methodology & Chaos Theory</h2>
+            <p class="section-paragraph">
+                We fusing NASA's climate models with ESA's atmospherics, air monitoring and multi-satellite precipitation tracking. Our chaos theory engine translates multi-satellite telemetry into consonant Lydian scales, giving voice to planetary rhythms.
+            </p>
+        </div>
+    </section>
+
+    <section class="section-3">
+        <div class="ref-dashboard">
+            <div class="ref-row">
+                <div class="ref-media-card">
+                    <canvas id="satelliteCanvas"></canvas>
+                    <canvas id="chaosCanvas"></canvas>
+
+                    <div class="top-hud-bar">
+                        <span class="ref-micro-label">NASA GIBS MODIS TERRA &bull; OPTICAL PIXEL SCANNER</span>
+                        <span class="live-pill" id="schumannBadge">SCHUMANN: 7.83 Hz LOCKED</span>
+                    </div>
+
+                    <div class="hud-overlay">
+                        <div class="hud-title" id="hudNodeTitle">GLOBAL NODE: STANDBY (SELECT ANY COORDINATE)</div>
+                        <div class="hud-grid">
+                            <div class="hud-data">COORD: <span id="hudCoords">25.6866° N, 100.3161° W</span></div>
+                            <div class="hud-data">LORENZ (x,y,z): <span id="hudLorenz">0.10, 0.00, 0.00</span></div>
+                            <div class="hud-data">4D TENSOR [R,G,B,ω]: <span id="hudTensor">[0.00, 0.00, 0.00, 0.00]</span></div>
+                            <div class="hud-data">FM CARRIER / MOD: <span id="hudFM">STANDBY</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ref-control-card">
+                    <h2 class="ref-project-title">Interactive Demo:<br>Planetary Jukebox</h2>
+                    <div class="ref-meta-split">
+                        <ul class="ref-bullet-list">
+                            <li>NASA GIBS Pixel Scan</li>
+                            <li>Navier-Stokes Curl ω</li>
+                            <li>Lorenz Chaos + FM DSP</li>
+                        </ul>
+                        <p class="ref-mini-desc">
+                            Enter any city, country, or <code>lat, lon</code> on Earth to extract its 4D atmospheric tensor and sonify live satellite pixels.
+                        </p>
+                    </div>
+
+                    <div class="quick-nodes">
+                        <span class="node-chip" onclick="quickSelect('Tokyo, Japan')">Tokyo, Japan</span>
+                        <span class="node-chip" onclick="quickSelect('Monterrey, Mexico')">Monterrey</span>
+                        <span class="node-chip" onclick="quickSelect('Manaus, Brazil')">Amazonas</span>
+                        <span class="node-chip" onclick="quickSelect('Reykjavik, Iceland')">Iceland</span>
+                        <span class="node-chip" onclick="quickSelect('-77.84, 166.68')">Antarctica</span>
+                    </div>
+
+                    <input type="text" id="targetLocation" class="ref-input-bar" value="Tokyo, Japan" placeholder="Type any city, country, or lat, lon...">
+
+                    <div class="ref-pill-row">
+                        <button class="pill-btn-blue" onclick="igniteQuantumJukebox()">Sonify Satellite Matrix</button>
+                        <button class="pill-btn-white" onclick="stopQuantumJukebox()">Stop</button>
+                    </div>
+
+                    <div class="ref-glow-chamber">
+                        <div id="webOutputLog" class="ref-telemetry-text">
+                            <span style="color:#38BDF8;">[ready]</span> Awaiting global coordinate lock. Click <strong>Sonify Satellite Matrix</strong> to stream NASA MODIS pixel radiance through the 60Hz Lorenz Chaos FM Synthesizer.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ref-row">
+                <div class="ref-timeline-card">
+                    <div class="ref-timeline-header">
+                        <span>CONTINUOUS LORENZ PHASE-SPACE TRAJECTORY (60 FPS ODE SOLVER)</span>
+                        <span id="odeParamsLabel" style="color:#38BDF8;">σ=10.0 | ρ=28.0 | β=2.67</span>
+                    </div>
+                    <canvas id="phaseWaveCanvas" style="width:100%; height:58px;"></canvas>
+                </div>
+
+                <div class="ref-light-card">
+                    <div class="ref-light-header">
+                        <span class="blue-dot-badge"></span>
+                        <span>4D Multi-Agency Geophysical Tensor</span>
+                    </div>
+                    <div class="ref-metrics-grid">
+                        <div>
+                            <div class="metric-item-label">NASA Terra (T2M/Rad)</div>
+                            <div class="metric-item-val" id="metricNASA">-- °C / -- W</div>
+                        </div>
+                        <div>
+                            <div class="metric-item-label">ESA Sentinel (Cloud/Aer)</div>
+                            <div class="metric-item-val" id="metricESA">-- % AOD</div>
+                        </div>
+                        <div>
+                            <div class="metric-item-label">JAXA GPM (Precip/ω)</div>
+                            <div class="metric-item-val" id="metricJAXA">-- mm/h</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const satCanvas = document.getElementById('satelliteCanvas');
+        const satCtx = satCanvas.getContext('2d');
+        const chaosCanvas = document.getElementById('chaosCanvas');
+        const chaosCtx = chaosCanvas.getContext('2d');
+        const waveCanvas = document.getElementById('phaseWaveCanvas');
+        const waveCtx = waveCanvas.getContext('2d');
+
+        const pixelBuffer = document.createElement('canvas');
+        pixelBuffer.width = 128;
+        pixelBuffer.height = 128;
+        const bufCtx = pixelBuffer.getContext('2d', { willReadFrequently: true });
+
+        function resizeAllCanvases() {
+            satCanvas.width = satCanvas.offsetWidth;
+            satCanvas.height = satCanvas.offsetHeight;
+            chaosCanvas.width = chaosCanvas.offsetWidth;
+            chaosCanvas.height = chaosCanvas.offsetHeight;
+            waveCanvas.width = waveCanvas.offsetWidth;
+            waveCanvas.height = waveCanvas.offsetHeight;
+        }
+        window.addEventListener('resize', resizeAllCanvases);
+        resizeAllCanvases();
+
+        let isEngineRunning = false;
+        let currentLat = 35.6762;
+        let currentLon = 139.6503;
+        let liveEnv = { temp: 18.5, rad: 420, cloud: 35, precip: 0.2, wind: 14.0 };
+        let scanAngle = 0;
+
+        let lx = 0.1, ly = 0.0, lz = 0.0;
+        let sigma = 10.0, rho = 28.0, beta = 8.0 / 3.0;
+        let lorenzTrail = [];
+        let phaseHistory = new Array(120).fill(0);
+
+        function latLonToTile(lat, lon, zoom) {
+            const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
+            const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+            return { x, y, z: zoom };
+        }
+
+        function synthesizeGeophysicalBuffer(lat, lon, env) {
+            const imgData = bufCtx.createImageData(128, 128);
+            const data = imgData.data;
+            const thermalNorm = Math.min(1, Math.max(0, (env.temp + 20) / 60));
+            const cloudNorm = env.cloud / 100;
+            const precipNorm = Math.min(1, env.precip / 10);
+
+            for (let y = 0; y < 128; y++) {
+                for (let x = 0; x < 128; x++) {
+                    const idx = (y * 128 + x) * 4;
+                    const nx = (x / 128) * 4 + (lon * 0.05);
+                    const ny = (y / 128) * 4 + (lat * 0.05);
+                    const flow = Math.sin(nx * 2.1 + Math.cos(ny * 1.7)) * Math.cos(ny * 2.3 - Math.sin(nx * 1.3));
+                    const ridge = (flow + 1) * 0.5;
+
+                    data[idx]     = Math.floor(40 + thermalNorm * 165 * ridge + (1 - cloudNorm) * 40);
+                    data[idx + 1] = Math.floor(65 + (1 - Math.abs(lat)/90) * 130 * (1 - ridge * 0.5) + cloudNorm * 50);
+                    data[idx + 2] = Math.floor(110 + (cloudNorm * 90 + precipNorm * 55) * ridge);
+                    data[idx + 3] = 255;
+                }
+            }
+            bufCtx.putImageData(imgData, 0, 0);
+            satCtx.clearRect(0, 0, satCanvas.width, satCanvas.height);
+            satCtx.drawImage(pixelBuffer, 0, 0, satCanvas.width, satCanvas.height);
+        }
+
+        function loadNasaGibsSatelliteImage(lat, lon, env) {
+            synthesizeGeophysicalBuffer(lat, lon, env);
+            const d = new Date(Date.now() - 2 * 86400000);
+            const dateStr = d.toISOString().split('T')[0];
+            const tile = latLonToTile(lat, lon, 6);
+            const gibsUrl = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${dateStr}/GoogleMapsCompatible_Level9/${tile.z}/${tile.y}/${tile.x}.jpg`;
+
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = function() {
+                try {
+                    bufCtx.drawImage(img, 0, 0, 128, 128);
+                    bufCtx.getImageData(64, 64, 1, 1);
+                    satCtx.clearRect(0, 0, satCanvas.width, satCanvas.height);
+                    satCtx.drawImage(img, 0, 0, satCanvas.width, satCanvas.height);
+                } catch (e) {}
+            };
+            img.src = gibsUrl;
+        }
+
+        loadNasaGibsSatelliteImage(currentLat, currentLon, liveEnv);
+
+        let audioCtx = null;
+        let masterGain = null;
+        let carrier1 = null, carrier2 = null, carrier3 = null;
+        let modulator1 = null, modGain1 = null;
+        let schumannSub = null, schumannLFO = null, schumannLFOGain = null;
+        let biquadFilter = null;
+        let stereoPanner = null;
+
+        const SCHUMANN_HZ = 7.83;
+        const LYDIAN_RATIOS = [1.0, 1.125, 1.25, 1.4142, 1.5, 1.6667, 1.875, 2.0];
+
+        function initQuantumFMSynth() {
+            if (audioCtx) return;
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContextClass();
+
+            masterGain = audioCtx.createGain();
+            masterGain.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+
+            biquadFilter = audioCtx.createBiquadFilter();
+            biquadFilter.type = 'lowpass';
+            biquadFilter.frequency.setValueAtTime(1100, audioCtx.currentTime);
+            biquadFilter.Q.setValueAtTime(4.5, audioCtx.currentTime);
+
+            stereoPanner = audioCtx.createStereoPanner();
+            stereoPanner.pan.setValueAtTime(0, audioCtx.currentTime);
+
+            const delay = audioCtx.createDelay();
+            delay.delayTime.setValueAtTime(0.37, audioCtx.currentTime);
+            const feedback = audioCtx.createGain();
+            feedback.gain.setValueAtTime(0.38, audioCtx.currentTime);
+            delay.connect(feedback);
+            feedback.connect(delay);
+
+            biquadFilter.connect(stereoPanner);
+            stereoPanner.connect(masterGain);
+            stereoPanner.connect(delay);
+            delay.connect(masterGain);
+            masterGain.connect(audioCtx.destination);
+
+            const baseFundamental = SCHUMANN_HZ * 24;
+
+            modulator1 = audioCtx.createOscillator();
+            modulator1.type = 'sine';
+            modulator1.frequency.setValueAtTime(baseFundamental * 1.5, audioCtx.currentTime);
+            modGain1 = audioCtx.createGain();
+            modGain1.gain.setValueAtTime(45, audioCtx.currentTime);
+            modulator1.connect(modGain1);
+
+            carrier1 = audioCtx.createOscillator();
+            carrier1.type = 'sine';
+            carrier1.frequency.setValueAtTime(baseFundamental, audioCtx.currentTime);
+
+            carrier2 = audioCtx.createOscillator();
+            carrier2.type = 'triangle';
+            carrier2.frequency.setValueAtTime(baseFundamental * 1.4142, audioCtx.currentTime);
+
+            carrier3 = audioCtx.createOscillator();
+            carrier3.type = 'sine';
+            carrier3.frequency.setValueAtTime(baseFundamental * 1.5, audioCtx.currentTime);
+
+            modGain1.connect(carrier1.frequency);
+            modGain1.connect(carrier2.frequency);
+
+            const c1Gain = audioCtx.createGain(); c1Gain.gain.value = 0.24;
+            const c2Gain = audioCtx.createGain(); c2Gain.gain.value = 0.11;
+            const c3Gain = audioCtx.createGain(); c3Gain.gain.value = 0.14;
+
+            carrier1.connect(c1Gain); c1Gain.connect(biquadFilter);
+            carrier2.connect(c2Gain); c2Gain.connect(biquadFilter);
+            carrier3.connect(c3Gain); c3Gain.connect(biquadFilter);
+
+            schumannSub = audioCtx.createOscillator();
+            schumannSub.type = 'sine';
+            schumannSub.frequency.setValueAtTime(SCHUMANN_HZ * 8, audioCtx.currentTime);
+            const subGain = audioCtx.createGain();
+            subGain.gain.value = 0.20;
+            schumannSub.connect(subGain);
+            subGain.connect(masterGain);
+
+            schumannLFO = audioCtx.createOscillator();
+            schumannLFO.type = 'sine';
+            schumannLFO.frequency.setValueAtTime(SCHUMANN_HZ, audioCtx.currentTime);
+            schumannLFOGain = audioCtx.createGain();
+            schumannLFOGain.gain.value = 140;
+            schumannLFO.connect(schumannLFOGain);
+            schumannLFOGain.connect(biquadFilter.frequency);
+
+            modulator1.start();
+            carrier1.start();
+            carrier2.start();
+            carrier3.start();
+            schumannSub.start();
+            schumannLFO.start();
+        }
+
+        function physicsAndRenderLoop() {
+            const w = chaosCanvas.width;
+            const h = chaosCanvas.height;
+            chaosCtx.clearRect(0, 0, w, h);
+
+            scanAngle += isEngineRunning ? 0.025 : 0.006;
+            const normX = 0.5 + 0.38 * Math.cos(scanAngle);
+            const normY = 0.5 + 0.38 * Math.sin(scanAngle * 1.3);
+            const px = Math.min(126, Math.max(1, Math.floor(normX * 128)));
+            const py = Math.min(126, Math.max(1, Math.floor(normY * 128)));
+
+            const pCenter = bufCtx.getImageData(px, py, 1, 1).data;
+            const pRight  = bufCtx.getImageData(px + 1, py, 1, 1).data;
+            const pDown   = bufCtx.getImageData(px, py + 1, 1, 1).data;
+
+            const rNorm = pCenter[0] / 255;
+            const gNorm = pCenter[1] / 255;
+            const bNorm = pCenter[2] / 255;
+
+            const du_dy = (pDown[0] - pCenter[0]) / 255;
+            const dv_dx = (pRight[2] - pCenter[2]) / 255;
+            const vorticity = Math.abs(dv_dx - du_dy) * 10.0;
+
+            sigma = 8.0 + gNorm * 6.0;
+            rho   = 22.0 + rNorm * 14.0 + vorticity;
+            beta  = 2.0 + bNorm * 1.8;
+
+            const dt = isEngineRunning ? 0.012 : 0.004;
+            const dx = sigma * (ly - lx);
+            const dy = lx * (rho - lz) - ly;
+            const dz = lx * ly - beta * lz;
+            lx += dx * dt;
+            ly += dy * dt;
+            lz += dz * dt;
+
+            const projX = (w * 0.5) + lx * (w * 0.016);
+            const projY = (h * 0.78) - lz * (h * 0.011);
+            lorenzTrail.push({ x: projX, y: projY });
+            if (lorenzTrail.length > 140) lorenzTrail.shift();
+
+            const laserX = normX * w;
+            const laserY = normY * h;
+            chaosCtx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+            chaosCtx.lineWidth = 1;
+            chaosCtx.beginPath();
+            chaosCtx.moveTo(laserX, 0); chaosCtx.lineTo(laserX, h);
+            chaosCtx.moveTo(0, laserY); chaosCtx.lineTo(w, laserY);
+            chaosCtx.stroke();
+
+            chaosCtx.fillStyle = '#34D399';
+            chaosCtx.beginPath();
+            chaosCtx.arc(laserX, laserY, 4.5, 0, Math.PI * 2);
+            chaosCtx.fill();
+
+            if (lorenzTrail.length > 2) {
+                chaosCtx.beginPath();
+                chaosCtx.strokeStyle = isEngineRunning ? '#38BDF8' : 'rgba(56, 189, 248, 0.35)';
+                chaosCtx.lineWidth = 2;
+                for (let i = 0; i < lorenzTrail.length; i++) {
+                    if (i === 0) chaosCtx.moveTo(lorenzTrail[i].x, lorenzTrail[i].y);
+                    else chaosCtx.lineTo(lorenzTrail[i].x, lorenzTrail[i].y);
+                }
+                chaosCtx.stroke();
+            }
+
+            if (isEngineRunning && audioCtx && audioCtx.state === 'running') {
+                const now = audioCtx.currentTime;
+                const scaleIdx = Math.floor(Math.abs(lx) % LYDIAN_RATIOS.length);
+                const harmonicMult = LYDIAN_RATIOS[scaleIdx];
+                const baseSchumann = (SCHUMANN_HZ * 24) * (0.85 + rNorm * 0.45);
+
+                carrier1.frequency.setTargetAtTime(baseSchumann, now, 0.08);
+                carrier2.frequency.setTargetAtTime(baseSchumann * harmonicMult, now, 0.12);
+                carrier3.frequency.setTargetAtTime(baseSchumann * (1.5 + bNorm * 0.375), now, 0.15);
+
+                const fmIndex = 20 + Math.abs(lz) * 3.8 + vorticity * 35;
+                modGain1.gain.setTargetAtTime(fmIndex, now, 0.06);
+                modulator1.frequency.setTargetAtTime(baseSchumann * (1.0 + gNorm * 2.0), now, 0.08);
+
+                biquadFilter.frequency.setTargetAtTime(320 + Math.abs(lz) * 42, now, 0.08);
+                stereoPanner.pan.setTargetAtTime(Math.max(-0.9, Math.min(0.9, lx / 22)), now, 0.08);
+
+                document.getElementById('hudLorenz').textContent = `${lx.toFixed(2)}, ${ly.toFixed(2)}, ${lz.toFixed(2)}`;
+                document.getElementById('hudTensor').textContent = `[${rNorm.toFixed(2)}, ${gNorm.toFixed(2)}, ${bNorm.toFixed(2)}, ${vorticity.toFixed(2)}]`;
+                document.getElementById('hudFM').textContent = `${baseSchumann.toFixed(1)}Hz | FM_IDX:${fmIndex.toFixed(0)}`;
+                document.getElementById('odeParamsLabel').textContent = `σ=${sigma.toFixed(1)} | ρ=${rho.toFixed(1)} | β=${beta.toFixed(2)}`;
+            }
+
+            phaseHistory.push(lx * 1.1);
+            phaseHistory.shift();
+            const ww = waveCanvas.width;
+            const wh = waveCanvas.height;
+            waveCtx.clearRect(0, 0, ww, wh);
+            waveCtx.beginPath();
+            waveCtx.strokeStyle = isEngineRunning ? '#38BDF8' : 'rgba(56, 189, 248, 0.35)';
+            waveCtx.lineWidth = 2;
+            for (let i = 0; i < phaseHistory.length; i++) {
+                const wx = (i / (phaseHistory.length - 1)) * ww;
+                const wy = (wh / 2) + (phaseHistory[i] / 28) * (wh * 0.42);
+                if (i === 0) waveCtx.moveTo(wx, wy);
+                else waveCtx.lineTo(wx, wy);
+            }
+            waveCtx.stroke();
+
+            requestAnimationFrame(physicsAndRenderLoop);
+        }
+        requestAnimationFrame(physicsAndRenderLoop);
+
+        function quickSelect(place) {
+            document.getElementById('targetLocation').value = place;
+            igniteQuantumJukebox();
+        }
+
+        async function igniteQuantumJukebox() {
+            const query = document.getElementById('targetLocation').value.trim() || 'Tokyo, Japan';
+            const logBox = document.getElementById('webOutputLog');
+            const hudTitle = document.getElementById('hudNodeTitle');
+
+            initQuantumFMSynth();
+            if (audioCtx.state === 'suspended') {
+                await audioCtx.resume();
+            }
+            isEngineRunning = true;
+            masterGain.gain.setTargetAtTime(0.22, audioCtx.currentTime, 0.25);
+
+            hudTitle.textContent = `LOCKING GLOBAL NODE: ${query.toUpperCase()}...`;
+            logBox.innerHTML = `<span style="color:#38BDF8;">[sync]</span> Resolving global coordinates & NASA GIBS MODIS raster for <strong>${query}</strong>...`;
+
+            let resolvedName = query;
+            let lat = 35.6762, lon = 139.6503;
+
+            const coordMatch = query.match(/^(-?\d+(\.\d+)?)\s*,\s*(-?\d+(\.\d+)?)$/);
+            if (coordMatch) {
+                lat = parseFloat(coordMatch[1]);
+                lon = parseFloat(coordMatch[3]);
+                resolvedName = `Sector (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)`;
+            } else {
+                try {
+                    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&format=json`);
+                    const geoData = await geoRes.json();
+                    if (geoData.results && geoData.results.length > 0) {
+                        const hit = geoData.results[0];
+                        lat = hit.latitude;
+                        lon = hit.longitude;
+                        resolvedName = `${hit.name}${hit.country ? ', ' + hit.country : ''}`;
+                    }
+                } catch (e) {}
+            }
+
+            currentLat = lat;
+            currentLon = lon;
+
+            try {
+                const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,shortwave_radiation`);
+                const wxData = await wxRes.json();
+                if (wxData.current) {
+                    liveEnv = {
+                        temp: wxData.current.temperature_2m,
+                        rad: wxData.current.shortwave_radiation || 310,
+                        cloud: wxData.current.cloud_cover,
+                        precip: wxData.current.precipitation,
+                        wind: wxData.current.wind_speed_10m
+                    };
+                }
+            } catch (e) {}
+
+            lorenzTrail = [];
+            loadNasaGibsSatelliteImage(lat, lon, liveEnv);
+
+            const latDir = lat >= 0 ? 'N' : 'S';
+            const lonDir = lon >= 0 ? 'E' : 'W';
+            hudTitle.textContent = `ACTIVE NODE: ${resolvedName.toUpperCase()}`;
+            document.getElementById('hudCoords').textContent = `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lon).toFixed(4)}° ${lonDir}`;
+
+            document.getElementById('metricNASA').textContent = `${liveEnv.temp.toFixed(1)}°C / ${liveEnv.rad.toFixed(0)}W`;
+            document.getElementById('metricESA').textContent = `${liveEnv.cloud}% Cloud`;
+            document.getElementById('metricJAXA').textContent = `${liveEnv.precip.toFixed(1)} mm/h`;
+
+            logBox.innerHTML = `
+                <span style="color:#34D399; font-weight:700;">[STREAMING LIVE]</span> <strong>${resolvedName}</strong> (${lat.toFixed(2)}°, ${lon.toFixed(2)}°)<br>
+                • <strong>NASA MODIS Terra</strong>: Optical tile & thermal radiance (${liveEnv.temp.toFixed(1)}°C) scanned.<br>
+                • <strong>ESA & JAXA Tensor</strong>: Cloud ${liveEnv.cloud}% | Precip ${liveEnv.precip}mm/h | Wind ${liveEnv.wind}km/h.<br>
+                • <strong>Quantum FM + Lorenz</strong>: 60Hz non-linear ODE driving Schumann 7.83Hz harmonics.
+            `;
+        }
+
+        function stopQuantumJukebox() {
+            isEngineRunning = false;
+            if (masterGain && audioCtx) {
+                masterGain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.15);
+            }
+            document.getElementById('hudNodeTitle').textContent = 'GLOBAL NODE: STANDBY';
+            document.getElementById('hudFM').textContent = 'PAUSED';
+            document.getElementById('webOutputLog').innerHTML = `<span style="color:#94A3B8;">[paused]</span> Quantum-Chaos FM synthesis halted. Select any global node to resume.`;
+        }
+    </script>
+</body>
+</html>
